@@ -1,11 +1,15 @@
 import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from dotenv import load_dotenv
 
-
+# Load environment variables from the .env file
+load_dotenv()
+USERNAME = os.getenv("USERNAME")
+TOKEN = os.getenv("TOKEN")
 # Define the function to post the latest stories to a Telegram channel
 async def post_story(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    folder = "uakaama_stories"  # Make sure this matches your actual download folder name
+    folder = f"{USERNAME}_stories" # Make sure this matches your actual download folder name
 
     # Check if folder exists and contains files
     if os.path.exists(folder) and os.listdir(folder):
@@ -27,7 +31,7 @@ async def post_story(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 def main():
-    app = ApplicationBuilder().token("7608645532:AAEiXOHsBNjhkVbgFwQU9S1CrF59TD4QHsc").build()
+    app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("poststory", post_story))
 
     app.run_polling()

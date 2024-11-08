@@ -1,3 +1,4 @@
 .env
 __pycache__/
 *.pyc
+posted_story_ids.txt

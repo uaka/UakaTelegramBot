@@ -6,16 +6,45 @@ from dotenv import load_dotenv
 load_dotenv()
 
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # Convert to int if needed
+USERNAME = os.getenv("USERNAME")
+TOKEN = os.getenv("TOKEN")
+
+# File path for tracking posted stories
+TRACK_FILE = "posted_story_ids.txt"
+
+# Initialize tracking file if it doesn't exist
+if not os.path.exists(TRACK_FILE):
+    open(TRACK_FILE, 'w').close()
+
+
+# Helper function to load posted story IDs
+def load_posted_story_ids():
+    with open(TRACK_FILE, 'r') as f:
+        return set(f.read().splitlines())
+
+
+# Helper function to add a new story ID to the tracking file
+def save_posted_story_id(story_id):
+    with open(TRACK_FILE, 'a') as f:
+        f.write(f"{story_id}\n")
 
 
 # Define the function to post the latest stories to the Telegram channel
 async def post_story(context: ContextTypes.DEFAULT_TYPE) -> None:
-    folder = "uakaama_stories"  # Folder where stories are downloaded
+    folder = f"{USERNAME}_stories"  # Folder where stories are downloaded
+    posted_story_ids = load_posted_story_ids()
 
     # Check if folder exists and contains files
     if os.path.exists(folder) and os.listdir(folder):
         for filename in os.listdir(folder):
             file_path = os.path.join(folder, filename)
+            story_id = os.path.splitext(filename)[0]  # Use filename (without extension) as story ID
+
+            # Skip if this story was already posted
+            if story_id in posted_story_ids:
+                print(f"Skipping already posted story: {filename}")
+                continue
+
             if os.path.isfile(file_path):
                 # Check if the file is an image or a video and send accordingly
                 if filename.endswith('.jpg'):
@@ -23,29 +52,22 @@ async def post_story(context: ContextTypes.DEFAULT_TYPE) -> None:
                 elif filename.endswith('.mp4'):
                     await context.bot.send_video(chat_id=CHANNEL_ID, video=open(file_path, 'rb'))
 
+                # Mark story as posted
+                save_posted_story_id(story_id)
+                print(f"Posted and saved story ID: {story_id}")
+
                 # Optional: Delete the file after sending to avoid re-posting
                 os.remove(file_path)
-
-        # Log confirmation of posting
-        print("Stories have been posted to the channel.")
     else:
         print("No new stories available to post.")
 
-
 def main():
-    app = ApplicationBuilder().token("7608645532:AAEiXOHsBNjhkVbgFwQU9S1CrF59TD4QHsc").build()
+    app = ApplicationBuilder().token(TOKEN).build()
 
     # Schedule the post_story function to run periodically (every 10 minutes as an example)
-    app.job_queue.run_repeating(post_story, interval=6)  # interval is in seconds
+    app.job_queue.run_repeating(post_story, interval=10)  # interval is in seconds
 
     app.run_polling()
-
-    # app = ApplicationBuilder().token("7608645532:AAEiXOHsBNjhkVbgFwQU9S1CrF59TD4QHsc").post_init(lambda app: app.job_queue.start()).build()
-    #
-    # # Schedule the post_story function to run periodically (every 10 minutes as an example)
-    # app.job_queue.run_repeating(post_story, interval=600)  # interval is in seconds
-    #
-    # app.run_polling()
 
 
 if __name__ == "__main__":
