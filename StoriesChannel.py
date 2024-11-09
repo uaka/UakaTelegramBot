@@ -43,6 +43,7 @@ async def post_story(context: ContextTypes.DEFAULT_TYPE) -> None:
             # Skip if this story was already posted
             if story_id in posted_story_ids:
                 print(f"Skipping already posted story: {filename}")
+                os.remove(file_path)
                 continue
 
             if os.path.isfile(file_path):
