@@ -1,6 +1,10 @@
 import os
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from dotenv import load_dotenv
+import logging
+
+# Set up basic logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -10,24 +14,21 @@ USERNAME = os.getenv("USERNAME")
 TOKEN = os.getenv("TOKEN")
 
 # File path for tracking posted stories
-TRACK_FILE = "posted_story_ids.txt"
+TRACK_POSTED_STORIES_FILE = "posted_story_ids.txt"
 
 # Initialize tracking file if it doesn't exist
-if not os.path.exists(TRACK_FILE):
-    open(TRACK_FILE, 'w').close()
-
+if not os.path.exists(TRACK_POSTED_STORIES_FILE):
+    open(TRACK_POSTED_STORIES_FILE, 'w').close()
 
 # Helper function to load posted story IDs
 def load_posted_story_ids():
-    with open(TRACK_FILE, 'r') as f:
+    with open(TRACK_POSTED_STORIES_FILE, 'r') as f:
         return set(f.read().splitlines())
-
 
 # Helper function to add a new story ID to the tracking file
 def save_posted_story_id(story_id):
-    with open(TRACK_FILE, 'a') as f:
+    with open(TRACK_POSTED_STORIES_FILE, 'a') as f:
         f.write(f"{story_id}\n")
-
 
 # Define the function to post the latest stories to the Telegram channel
 async def post_story(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -42,34 +43,38 @@ async def post_story(context: ContextTypes.DEFAULT_TYPE) -> None:
 
             # Skip if this story was already posted
             if story_id in posted_story_ids:
-                print(f"Skipping already posted story: {filename}")
-                os.remove(file_path)
+                logging.info(f"Skipping already posted story: {filename}")
                 continue
 
             if os.path.isfile(file_path):
-                # Check if the file is an image or a video and send accordingly
-                if filename.endswith('.jpg'):
-                    await context.bot.send_photo(chat_id=CHANNEL_ID, photo=open(file_path, 'rb'))
-                elif filename.endswith('.mp4'):
-                    await context.bot.send_video(chat_id=CHANNEL_ID, video=open(file_path, 'rb'))
+                try:
+                    # Send the file based on type
+                    with open(file_path, 'rb') as file:
+                        if filename.endswith('.jpg'):
+                            await context.bot.send_photo(chat_id=CHANNEL_ID, photo=file)
+                        elif filename.endswith('.mp4'):
+                            await context.bot.send_video(chat_id=CHANNEL_ID, video=file)
 
-                # Mark story as posted
-                save_posted_story_id(story_id)
-                print(f"Posted and saved story ID: {story_id}")
+                    # Mark story as posted
+                    save_posted_story_id(story_id)
+                    logging.info(f"Posted and saved story ID: {story_id}")
 
-                # Optional: Delete the file after sending to avoid re-posting
-                os.remove(file_path)
+                    # Optional: Delete the file after sending to avoid re-posting
+                    os.remove(file_path)
+                    logging.info(f"Deleted file after posting: {filename}")
+
+                except Exception as e:
+                    logging.error(f"Failed to post {filename}: {e}")
     else:
-        print("No new stories available to post.")
+        logging.info("No new stories available to post.")
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Schedule the post_story function to run periodically (every 10 minutes as an example)
-    app.job_queue.run_repeating(post_story, interval=10)  # interval is in seconds
+    # Schedule the post_story function to run periodically (e.g., every 10 minutes)
+    app.job_queue.run_repeating(post_story, interval=600)  # interval is in seconds (600s = 10 min)
 
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
