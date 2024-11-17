@@ -14,6 +14,7 @@ PASSWORD = os.getenv("PASSWORD")
 
 # Login to Instagram
 L.login(USERNAME, PASSWORD)
+# L.load_session_from_file(USERNAME)
 
 # Define the target download folder
 TARGET_FOLDER = f"{USERNAME}_stories"
@@ -22,15 +23,20 @@ TARGET_FOLDER = f"{USERNAME}_stories"
 if not os.path.exists(TARGET_FOLDER):
     os.makedirs(TARGET_FOLDER)
 
+
 # Download only unique videos from your own stories
 def download_stories():
     try:
+      #  posts = instaloader.Profile.from_username(L.context, USERNAME).get_posts()
         for story in L.get_stories():
-            for item in story.get_items():
+             for item in story:
                 # Check if this is your story
                 if item.owner_username == USERNAME:
                     # Create a unique story ID based on the filename without the extension
-                    story_id = item.mediaid  # or use item.mediaid for a unique ID
+                    # story_id = L.format_filename  # or use item.mediaid for a unique ID
+
+                    file_path = os.path.join(TARGET_FOLDER, L.format_filename(item))
+                    story_id = L.format_filename(item)
 
                     # Construct the file path to check if the video is already downloaded
                     video_path = os.path.join(TARGET_FOLDER, f"{story_id}.mp4")
@@ -38,23 +44,19 @@ def download_stories():
 
                     # If the video file exists, skip downloading any additional files with the same ID
                     if os.path.exists(video_path):
-                        logging.info(f"Video for story ID {story_id} already exists. Skipping download of other formats.")
+                        logging.info(f"Video for story ID {story_id} already exists. Skipping download.")
                         continue
 
-                    # If an image with the same story ID exists, remove it and download only the video
-                    if os.path.exists(image_path) and item.is_video:
-                        os.remove(image_path)
-                        logging.info(f"Removed image for story ID {story_id} to download video instead.")
-
-                    # Download only if it's a video or if no other file with the same ID exists
-                    if item.is_video:
                         L.download_storyitem(item, target=TARGET_FOLDER)
-                        logging.info(f"Downloaded video for story ID {story_id}.")
-                    else:
-                        logging.info(f"Skipping image for story ID {story_id} as a video will be prioritized.")
+                        logging.info(f"Downloaded story ID {story_id}.")
+                        # If an image with the same story ID exists, remove it
+                        if os.path.exists(image_path) and item.is_video:
+                            os.remove(image_path)
+                            logging.info(f"Removed image for story ID {story_id} to have only video instead.")
 
     except Exception as e:
         logging.error(f"Error downloading stories: {e}")
+
 
 # Run the download function
 download_stories()

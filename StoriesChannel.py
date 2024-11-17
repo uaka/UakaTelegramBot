@@ -72,7 +72,7 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     # Schedule the post_story function to run periodically (e.g., every 10 minutes)
-    app.job_queue.run_repeating(post_story, interval=600)  # interval is in seconds (600s = 10 min)
+    app.job_queue.run_repeating(post_story, interval=60)  # interval is in seconds (600s = 10 min)
 
     app.run_polling()
 

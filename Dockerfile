@@ -4,8 +4,9 @@ FROM python:3.9-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file and install dependencies
 COPY requirements.txt .
+
+# Copy the requirements file and install dependencies
 RUN pip install -r requirements.txt
 
 # Copy the entire project into the container
@@ -15,6 +16,6 @@ COPY . .
 # COPY your_instagram_username.session .
 
 # Run the main script, which triggers both instaLoader.py and StoriesChannel.py
-CMD ["python", "run_all.py"]
+CMD ["python", "PetMemes.py"]
 
 

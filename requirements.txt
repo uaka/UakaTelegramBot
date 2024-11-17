@@ -1,4 +1,4 @@
 python-telegram-bot[job-queue]
-instaloader
+python-telegram-bot
 python-dotenv
-Flask
+praw
