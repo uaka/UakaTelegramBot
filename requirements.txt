@@ -1,4 +1,6 @@
-python-telegram-bot[job-queue]
+python-telegram-bot[job-queue]~=21.7
 python-telegram-bot
-python-dotenv
-praw
+python-dotenv~=1.0.1
+praw~=7.8.1
+requests~=2.32.3
+instaloader~=4.14
